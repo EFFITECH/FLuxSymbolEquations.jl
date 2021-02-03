@@ -1,0 +1,17 @@
+name = "FLuxSymbolEquations"
+uuid = "f0a53698-b934-455f-ab7b-cd74699f7fdf"
+authors = ["jpbrasile <brasile@effitech.eu> and contributors"]
+version = "0.1.0"
+
+[deps]
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
