@@ -1,5 +1,5 @@
 module FLuxSymbolEquations
-
+export greet
 function greet()
 	return  "Hello World!"
 end
