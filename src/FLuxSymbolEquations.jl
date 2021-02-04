@@ -1,18 +1,16 @@
 module FLuxSymbolEquations
+# just for test
 export greet
 function greet()
 	return  "Hello World!"
 end
 #
-
+export myStrgToSolve
 excitVar=""  # voir 129 et 339
 mutable struct Schematics
 	Template::Array{String}
 end
 LLCExample=Schematics(["!VUd 110.,Rp 1e-4 ,Lr 0.0018524,T1P 1.82e-3,MT1 0.000823308666297155,Cr 39e-9","MT1 ,T1S 380e-9 ,R2 1e-4 ,!rect ,Co 10e-6","Co ,Rl 2.4"])
-
-#
-
 
 using SymPy
 
@@ -250,7 +248,6 @@ function getmyVars()
 	return myvars,mySymbvars
 end
 
-
 myVar=getmyVars()
 
 #Création des noms symboliques)
@@ -338,7 +335,7 @@ for i in 1:length(rect())
 	push!(rect1,"du["*string(i)*"] = "*rect()[i])
 end
 rect1
-excitVar="VUd"  #§§§§§§§§§§§§§§§§§§§§§§§§§§§!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+excitVar="VUd"  #§§§§§§§§§§§§§§§§§§§§§§§§§§§!!!!!!!!!!!!!!!!
 
 function flatEqs(sympyEq)
 	eqstoSolv=""
@@ -348,17 +345,13 @@ function flatEqs(sympyEq)
 	end
 	eqstoSolv=eqstoSolv*sympyEq[length(sympyEq)]
 	for ii in 1:length(myVar)-1
-		myflatVar=myflatVar*myVar[ii]*","
+		myflatVar=myflatVar*myVar[1][ii]*","
 	end
-	myflatVar=myflatVar*myVar[length(myVar)]
+	myflatVar=myflatVar*myVar[1][length(myVar)]
 	return eqstoSolv,myflatVar
 end
 
-replace.(rect1,excitVar=>excitVar*"*p[1]")
-#flatEqs(replace.(rect1,excitVar=>excitVar*"*p[1]"))
-#myStrgToSolve=flatEqs(replace.(rect1,excitVar=>excitVar*"*p[1]"))[1]*"; end"
-#replace.(rect1,excitVar=>excitVar*"*p[1]")
-#myStrgToSolve1="function eqDiffToSolve!(du,u,p,t) VCr,I1,VCo,I2 = u; " .*replace(myStrgToSolve,","=>"; ")
+myStrgToSolve=flatEqs(replace.(rect1,excitVar=>excitVar*"*p[1]"))[1]*"; end"
 
 
 #"VRp-(Rp*I1),VLr-(Lr*dI1),VT1P-(T1P*dI1),VMT1-(-MT1*dI2),VmT1-(-MT1*dI1),VT1S-(T1S*dI2),VR2-(R2*I2),VRl-(Rl*I3),VUd+VRp+VLr+VT1P+VMT1+VCr,VmT1+VT1S+VR2+VCo,(-VCo)+VRl,I1-(Cr*dVCr),I2-I3-(Co*dVCo)"
