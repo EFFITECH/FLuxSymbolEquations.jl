@@ -372,4 +372,49 @@ myStrgToSolve=flatEqs(replace.(rect1,excitVar=>excitVar*"*p[1]"))[1]*"; end"
 #    "#du[4]=dI2= -(I1*MT1*Rp + I2*Lr*R2 + I2*R2*T1P + Lr*VCo*(-sign(I2)) + MT1*VCr + MT1*VUd*p[1] + T1P*VCo*(-sign(I2)))/(Lr*T1S - MT1^2 + T1P*T1S);"
  #  ]
 
+
+# A Valider
+
+myStrgToSolve1="function eqDiffToSolve!(du,u,p,t) I1,I2,VCr,VCo  = u; " *replace(myStrgToSolve,","=>"; ") #!!!!!!
+
+
+eval(Meta.parse(myStrgToSolve1))
+
+
+#function solveConvert()
+#Ud=110.;Rp=0.1e-3;Lp=1.82e-3;Lr=32.4e-6;k=0.99;Ls=380.e-6;M=k*(Lp*Ls)^.5;Cr=39e-9;Co=10e-6;R=2.4;freq=1e5
+freq=1e5  #OK
+VUd=110.;  #OK
+Rp =1e-4 ; #OK
+Lr= 32.4e-6; #OK
+T1P= 1.82e-3 ; #OK
+MT1 =0.000823308666297155; #OK
+Cr= 39e-9; #OK
+T1S =380e-6 ;
+R2= 1e-4;
+Co=10e-6;
+Rl= 2.4
+u₀=[0,0,0,0]
+p=[-1.0,1.0]
+tspan = (0.0,600.e-6)
+nbPeriod=60
+dosetimes = collect(1:nbPeriod)/freq/2
+eval(Meta.parse(myStrgToSolve1))
+
+using DifferentialEquations
+prob = ODEProblem(eqDiffToSolve! ,u₀,tspan,p)
+condition(u,t,integrator) = t ∈ dosetimes
+affect!(integrator) = integrator.p[1] = -integrator.p[1]
+cb = DiscreteCallback(condition,affect!)
+
+sol= DifferentialEquations.solve(prob ,Tsit5(),callback=cb,tstops=dosetimes)
+using Plots
+plot(sol,linewidth=2,xaxis="t",label=["VCr" "I1" "VCo" "I2"],layout=(4,1))
+
+end
+
+
+
+
+
 end
