@@ -3,5 +3,5 @@ using Test
 
 @testset "FLuxSymbolEquations.jl" begin
     # Write your tests here.
-    greet()=="Hello World!"
+    greet()=="Hello World!!"
 end
