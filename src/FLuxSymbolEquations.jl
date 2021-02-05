@@ -9,7 +9,7 @@ function greet()
 	return  "Hello World!"
 end
 #
-myst=""
+mys=""
 excitVar=""  # voir 129 et 339
 mutable struct Schematics
 	Template::Array{String}
@@ -333,12 +333,14 @@ myst=""
 
 function collectVar(rt)
 	myst=""
+	myVrArray=[]
 	for i in 1:length(rt)
 	myst=myst*rt[i][2:findfirst(isequal('='), rt[i])-1]*","
+	push!(myVrArray,rt[i][2:findfirst(isequal('='), rt[i])-1])
 	end
-	return myst[1:end-1]
+	return myst[1:end-1],myVrArray
 end
-myst=collectVar(rect())
+myst,myVrArray=collectVar(rect())
 
 myStrgToSolve=""
 myStrgToSolve1=""
@@ -423,7 +425,7 @@ cb = DiscreteCallback(condition,affect!)
 
 sol= DifferentialEquations.solve(prob ,Tsit5(),callback=cb,tstops=dosetimes)
 using Plots
-myGraph=plot(sol,linewidth=2,xaxis="t",label=["VCr" "I1" "VCo" "I2"],layout=(4,1))
+myGraph=plot(sol,linewidth=2,xaxis="t",label=permutedims(myVrArray),layout=(4,1))
 
 
 end
