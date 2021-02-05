@@ -14,8 +14,7 @@ excitVar=""  # voir 129 et 339
 mutable struct Schematics
 	Template::Array{String}
 end
-LLCExample=Schematics(["!VUd 110.,Rp 1e-4 ,Lr 0.0018524,T1P 1.82e-3,MT1 0.000823308666297155,Cr 39e-9","MT1 ,T1S 380e-9 ,R2 1e-4 ,!rect ,Co 10e-6","Co ,Rl 2.4"])
-
+LLCExample=Schematics(["!VUd 110.,Rp 1e-4 ,Lr 32.4e-6,T1P 1.82e-3,MT1 0.000823308666297155,Cr 39e-9","MT1 ,T1S 380e-9 ,R2 1e-4 ,!rect ,Co 10e-6","Co ,Rl 2.4"])
 using SymPy
 
 mutable struct Component
@@ -135,11 +134,15 @@ function fillCmpt(LLCExample)
 			else
 				tCmpt.special=false
 				tCmpt.name=temp0[1][1:end]
+
 				if temp0[2]==""
 					tCmpt.commons=j
 					push!(CommonCmpt,tCmpt.name)
 					push!(CommonLoop,j)
+					tCmpt.value=1e-139 # dummy value
 				end
+
+
 				tCmpt.voltage="V"*tCmpt.name
 
 			end
@@ -148,9 +151,14 @@ function fillCmpt(LLCExample)
 			tCmpt.current="I"*string(tCmpt.loopNb)
 			tCmpt.formula=formul(tCmpt.ctype,tCmpt.name,tCmpt.current)
 			tCmpt.rect=rectOn
-			if temp0[2]!="" tCmpt.value=parse(Float64, temp0[2]) end
+			#if tCmpt.value!=false
+			try
+				tCmpt.value=parse(Float64, temp0[2])
+			catch
+				tCmpt.value=1e-139
+			end
+			#end
 			push!(myLoop,tCmpt)
-
 		end
 	end
 	for i in 1:length(myLoop)
@@ -249,7 +257,7 @@ function getmyVars()
 	end
 	return myvars,mySymbvars
 end
-
+myLoop[7].value
 myVar=getmyVars()
 
 #Création des noms symboliques)
@@ -400,22 +408,31 @@ eval(Meta.parse(myStrgToSolve1))
 #function solveConvert()
 #Ud=110.;Rp=0.1e-3;Lp=1.82e-3;Lr=32.4e-6;k=0.99;Ls=380.e-6;M=k*(Lp*Ls)^.5;Cr=39e-9;Co=10e-6;R=2.4;freq=1e5
 freq=1e5  #OK
-VUd=110.;  #OK
-Rp =1e-4 ; #OK
-Lr= 32.4e-6; #OK
-T1P= 1.82e-3 ; #OK
-MT1 =0.000823308666297155; #OK
-Cr= 39e-9; #OK
-T1S =380e-6 ;
-R2= 1e-4;
-Co=10e-6;
-Rl= 2.4
+#VUd=110.;  #OK
+#Rp =1e-4 ; #OK
+#Lr= 32.4e-6; #OK
+#T1P= 1.82e-3 ; #OK
+#MT1 =0.000823308666297155; #OK
+#Cr= 39e-9; #OK
+#T1S =380e-6 ;
+#R2= 1e-4;
+#Co=10e-6;
+#Rl= 2.4
 u₀=[0,0,0,0]
 p=[-1.0,1.0]
 tspan = (0.0,600.e-6)
 nbPeriod=60
 dosetimes = collect(1:nbPeriod)/freq/2
 eval(Meta.parse(myStrgToSolve1))
+
+for i in 1:length(myLoop)
+	if typeof(myLoop[i].value)!=1e-139
+		try eval(Meta.parse(myLoop[i].name*"="*string(myLoop[i].value)))
+		catch
+		end
+	end
+end
+
 
 using DifferentialEquations
 prob = ODEProblem(eqDiffToSolve! ,u₀,tspan,p)
