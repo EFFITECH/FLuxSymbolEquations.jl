@@ -139,7 +139,7 @@ function fillCmpt(LLCExample)
 					tCmpt.commons=j
 					push!(CommonCmpt,tCmpt.name)
 					push!(CommonLoop,j)
-					tCmpt.value=1e-139 # dummy value
+					#tCmpt.value=1e-139 # dummy value
 				end
 
 
@@ -426,11 +426,11 @@ dosetimes = collect(1:nbPeriod)/freq/2
 eval(Meta.parse(myStrgToSolve1))
 
 for i in 1:length(myLoop)
-	if typeof(myLoop[i].value)!=1e-139
+	#if typeof(myLoop[i].value)!=1e-139
 		try eval(Meta.parse(myLoop[i].name*"="*string(myLoop[i].value)))
 		catch
 		end
-	end
+	#end
 end
 
 
