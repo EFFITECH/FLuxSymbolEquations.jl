@@ -4,12 +4,12 @@ module FLuxSymbolEquations
 # afectation des variables pour plot
 # variables d'intégration automatique OK
 # just for test
-export greet, myStrgToSolve
+export greet, myStrgToSolve, myGraph
 function greet()
 	return  "Hello World!"
 end
 #
-
+myst=""
 excitVar=""  # voir 129 et 339
 mutable struct Schematics
 	Template::Array{String}
@@ -115,8 +115,7 @@ function fillCmpt(LLCExample)
 	CommonCmpt=[]
 	CommonLoop=[]
 	test=[]
-
-
+    excitVar0=[]
 	for j in 1:length(LLCExample.Template)  # numero de boucle
 		parts=split(LLCExample.Template[j],",")
 		for i in 1:length(parts)
@@ -130,7 +129,7 @@ function fillCmpt(LLCExample)
 					tCmpt.voltage=""
 				else
 					tCmpt.voltage=tCmpt.name
-					excitVar=tCmpt.name
+					push!(excitVar0,tCmpt.name)
 				end
 
 			else
@@ -154,18 +153,16 @@ function fillCmpt(LLCExample)
 
 		end
 	end
-
-
 	for i in 1:length(myLoop)
 		if myLoop[i].name in CommonCmpt
 			push!(test,myLoop[i].name)
 			push!(test,myLoop[i].loopNb)
 		end
 	end
-	return myLoop,test
+	return myLoop,test,excitVar0[1]
 end
 
-
+fillCmpt(LLCExample)
 	# process transformer and common
 function proct()
 	cur=[]
@@ -210,7 +207,7 @@ function proct()
 end
 
 
-myLoop,CommonCmpt=fillCmpt(LLCExample)
+myLoop,CommonCmpt,excitVar=fillCmpt(LLCExample)
 myLoop1=proct()
 flattenEqs1,sumvolt=flattenEqs()
 
@@ -333,10 +330,15 @@ end
 
 rect()
 myst=""
-for i in 1:length(rect())
-	myst=myst*rect()[i][2:findfirst(isequal('='), rect()[i])-1]*","
+
+function collectVar(rt)
+	myst=""
+	for i in 1:length(rt)
+	myst=myst*rt[i][2:findfirst(isequal('='), rt[i])-1]*","
+	end
+	return myst[1:end-1]
 end
-myst[1:end-1]
+myst=collectVar(rect())
 
 myStrgToSolve=""
 myStrgToSolve1=""
@@ -361,7 +363,7 @@ function flatEqs(sympyEq)
 	return eqstoSolv,myflatVar
 end
 rect1
-excitVar
+excitVar=fillCmpt(LLCExample)[3]
 replace.(rect1,excitVar=>excitVar*"*p[1]")
 myStrgToSolve=flatEqs(replace.(rect1,excitVar=>excitVar*"*p[1]"))[1]*"; end"
 
@@ -386,8 +388,8 @@ myStrgToSolve=flatEqs(replace.(rect1,excitVar=>excitVar*"*p[1]"))[1]*"; end"
 
 
 # A Valider
-
-myStrgToSolve1="function eqDiffToSolve!(du,u,p,t) "* myst[1:end-1] *" = u; " *replace(myStrgToSolve,","=>"; ") #!!!!!!
+excitVar
+myStrgToSolve1="function eqDiffToSolve!(du,u,p,t) "* myst *" = u; " *replace(myStrgToSolve,","=>"; ") #!!!!!!
 
 
 eval(Meta.parse(myStrgToSolve1))
@@ -421,7 +423,7 @@ cb = DiscreteCallback(condition,affect!)
 
 sol= DifferentialEquations.solve(prob ,Tsit5(),callback=cb,tstops=dosetimes)
 using Plots
-plot(sol,linewidth=2,xaxis="t",label=["VCr" "I1" "VCo" "I2"],layout=(4,1))
+myGraph=plot(sol,linewidth=2,xaxis="t",label=["VCr" "I1" "VCo" "I2"],layout=(4,1))
 
 
 end
