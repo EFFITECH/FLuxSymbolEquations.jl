@@ -14,10 +14,11 @@ excitVar=""  # voir 129 et 339
 mutable struct Schematics
 	Template::Array{String}
 end
-LLCExample=Schematics(["!VUd 110.,Rp 1e-4 ,Lr 32.4e-6,T1P 1.82e-3,MT1 0.000823308666297155,Cr 39e-9","MT1 ,T1S 380e-9 ,R2 1e-4 ,!rect ,Co 10e-6","Co ,Rl 2.4"])
+LLCExample=Schematics(["!VUd 110.,Rp 1e-4 ,Lr 32.4e-6,T1P 1.82e-3,MT1 0.000823308666297155,Cr 39e-9","MT1 ,T1S 380e-6 ,R2 1e-4 ,!rect ,Co 10e-6","Co ,Rl 2.4"])
 using SymPy
 
 mutable struct Component
+
 	name::String
 	loopNb::Int64
 	formula::String
@@ -66,7 +67,7 @@ end
 
 # flatten formulas
 function flattenEqs()
-	flattenEqs=""
+	flattenEq=""
 	# process voltage sum in loop equal zero
 	sumvolt=String[]
 	for i in 1:length(LLCExample.Template ) push!(sumvolt,"") end
@@ -95,17 +96,17 @@ function flattenEqs()
 
 	# build list of equation
 	for i in 1:length(myLoop1)
-		flattenEqs*=replace(myLoop1[i].formula,"="=>"-(")*"),"
+		flattenEq*=replace(myLoop1[i].formula,"="=>"-(")*"),"
 	end
-	flattenEqs=flattenEqs[3:end]
+	flattenEq=flattenEq[3:end]
 	for i in 1:length(sumvolt)
 		sumvolt[i]=replace(sumvolt[i],"++"=>"+")
-		flattenEqs*=sumvolt[i]*","
+		flattenEq*=sumvolt[i]*","
 	end
 
-	flattenEqs=replace(flattenEqs,",),"=>",")
+	flattenEq=replace(flattenEq,",),"=>",")
 
-	return flattenEqs[1:end-1],sumvolt
+	return flattenEq[1:end-1],sumvolt
 end
 
 function fillCmpt(LLCExample)
@@ -135,7 +136,7 @@ function fillCmpt(LLCExample)
 				tCmpt.special=false
 				tCmpt.name=temp0[1][1:end]
 
-				if temp0[2]==""
+				if temp0[2]==""  !!!!!!!!!!!!!!!
 					tCmpt.commons=j
 					push!(CommonCmpt,tCmpt.name)
 					push!(CommonLoop,j)
@@ -155,7 +156,12 @@ function fillCmpt(LLCExample)
 			try
 				tCmpt.value=parse(Float64, temp0[2])
 			catch
-				tCmpt.value=1e-139
+				for k in 1:length(myLoop)
+					if myLoop[k].name==tCmpt.name
+						tCmpt.value=myLoop[k].value
+						break
+					end
+				end
 			end
 			#end
 			push!(myLoop,tCmpt)
@@ -167,10 +173,9 @@ function fillCmpt(LLCExample)
 			push!(test,myLoop[i].loopNb)
 		end
 	end
-	return myLoop,test,excitVar0[1]
+	return myLoop,test,excitVar0
 end
-
-fillCmpt(LLCExample)
+myLoop,CommonCmpt,excitVar=fillCmpt(LLCExample)
 	# process transformer and common
 function proct()
 	cur=[]
@@ -215,7 +220,7 @@ function proct()
 end
 
 
-myLoop,CommonCmpt,excitVar=fillCmpt(LLCExample)
+
 myLoop1=proct()
 flattenEqs1,sumvolt=flattenEqs()
 
@@ -258,6 +263,14 @@ function getmyVars()
 	return myvars,mySymbvars
 end
 myLoop[7].value
+
+#process CommonCmpt ["MT1", 1, MT2, 2, ...]
+
+
+
+
+
+
 myVar=getmyVars()
 
 #Création des noms symboliques)
@@ -374,8 +387,8 @@ function flatEqs(sympyEq)
 end
 rect1
 excitVar=fillCmpt(LLCExample)[3]
-replace.(rect1,excitVar=>excitVar*"*p[1]")
-myStrgToSolve=flatEqs(replace.(rect1,excitVar=>excitVar*"*p[1]"))[1]*"; end"
+#replace.(rect1,excitVar=>excitVar*"*p[1]")
+myStrgToSolve=flatEqs(replace.(rect1,excitVar[1]=>excitVar[1]*"*p[1]"))[1]*"; end"
 
 
 #"VRp-(Rp*I1),VLr-(Lr*dI1),VT1P-(T1P*dI1),VMT1-(-MT1*dI2),VmT1-(-MT1*dI1),VT1S-(T1S*dI2),VR2-(R2*I2),VRl-(Rl*I3),VUd+VRp+VLr+VT1P+VMT1+VCr,VmT1+VT1S+VR2+VCo,(-VCo)+VRl,I1-(Cr*dVCr),I2-I3-(Co*dVCo)"
