@@ -4,6 +4,7 @@ module FLuxSymbolEquations
 # afectation des variables pour plot
 # variables d'intégration automatique OK
 # just for test
+export SolveSymbolic,NumericSolve,PlotSol
 using Plots
 using DifferentialEquations
 using SymPy
@@ -43,9 +44,7 @@ end
 myInputCircuit=["!VUd 110.,Rp 1e-4 ,Lr 32.4e-6,T1P 1.82e-3,MT1 0.000823308666297155,Cr 39e-9","MT1 ,T1S 380e-6 ,R2 1e-4 ,!rect ,Co 10e-6","Co ,Rl 2.4"]
 
 #export greet, myStrgToSolve, myGraph
-function greet()
-	return  "Hello World!"
-end
+
 function formul(typ,nam,cur)
 	formul=""
 	if typ=="R"
@@ -356,14 +355,14 @@ function myEquationsSet(myInputCircuit)
 	#replace.(rect1,excitVar=>excitVar*"*p[1]")
 	myStrgToSolve=flatEqs(replace.(rect1,excitVar[1]=>excitVar[1]*"*p[1]"),myVar)[1]*"; end"
 	myStrgToSolve1="function eqDiffToSolve!(du,u,p,t) "* myst *" = u; " *replace(myStrgToSolve,","=>"; ") #!!!!!!
-	#eval(Meta.parse(myStrgToSolve1))
+	eval(Meta.parse(myStrgToSolve1))
 	freq=1e5  #OK
 	u₀=[0,0,0,0]
 	p=[-1.0,1.0]
 	tspan = (0.0,600.e-6)
 	nbPeriod=60
 	dosetimes = collect(1:nbPeriod)/freq/2
-	eval(Meta.parse(myStrgToSolve1))
+	#eval(Meta.parse(myStrgToSolve1))
 	for i in 1:length(myLoop)
 		#if typeof(myLoop[i].value)!=1e-139
 			try eval(Meta.parse(myLoop[i].name*"="*string(myLoop[i].value)))
@@ -387,4 +386,77 @@ function myEquationsSet(myInputCircuit)
 	#return VartoSolve[difEqIndex].*"=".*mysol[difEqIndex]
 end
 
+function SolveSymbolic(myInputCircuit)
+	mys=""
+	excitVar=""  #
+	LLCExample=Schematics(myInputCircuit)
+	myLoop,CommonCmpt,excitVar=fillCmpt(LLCExample)
+	myLoop1=proct(myLoop,CommonCmpt)
+	flattenEqs1,sumvolt=flattenEqs(LLCExample,CommonCmpt,myLoop1)
+	myVar=getmyVars(myLoop1,LLCExample)
+	symbdat=""
+	#Création des noms symboliques)
+	for j in 1:length(myVar)
+		for i in 1:length(myVar[j])
+			try
+				symbdat=replace(replace(replace(string(myVar[j][i]),"\"" =>""),"Any["=>""),"]"=>"")
+				eval(Meta.parse(symbdat*"=symbols(\""*symbdat*"\")"))
+			catch
+			end
+		end
+	end
+
+	Az=linsolve(eval(Meta.parse(flattenEqs1)),eval(Meta.parse(flatVars(myVar))))
+	mysol=split(replace(string.(Az),"FiniteSet(("=>"")[1:end-2],",")
+	VartoSolve=myVar[1]
+	mydVoudIindx=findall.("d",VartoSolve)
+	difEqIndex=findall(mydVoudIindx -> mydVoudIindx!=[],mydVoudIindx)
+    mydifEq=VartoSolve[difEqIndex].*"=".*mysol[difEqIndex]
+	rectComp=rectdata(myLoop1)
+	compsRect=split(rectComp,",")
+	cour=rect(rectComp,mydifEq)[2]
+	if compsRect!=[] cour=compsRect[1] end
+    myst,myVrArray=collectVar(rect(rectComp,mydifEq)[1])
+	myStrgToSolve=""
+	myStrgToSolve1=""
+	rect1=[]
+	for i in 1:length(rect(rectComp,mydifEq)[1])
+		push!(rect1,"du["*string(i)*"] = "*rect(rectComp,mydifEq)[1][i])
+	end
+	excitVar=fillCmpt(LLCExample)[3]
+	#replace.(rect1,excitVar=>excitVar*"*p[1]")
+	myStrgToSolve=flatEqs(replace.(rect1,excitVar[1]=>excitVar[1]*"*p[1]"),myVar)[1]*"; end"
+	myStrgToSolve1="function eqDiffToSolve!(du,u,p,t) "* myst *" = u; " *replace(myStrgToSolve,","=>"; ") #!!!!!!
+	eval(Meta.parse(myStrgToSolve1))
+	return myStrgToSolve1,myLoop,myVrArray
+end
+
+function NumericSolve(myStrgToSolve1,myLoop)
+	freq=1e5  #OK
+	u₀=[0,0,0,0]
+	p=[-1.0,1.0]
+	tspan = (0.0,600.e-6)
+	nbPeriod=60
+	dosetimes = collect(1:nbPeriod)/freq/2
+	#eval(Meta.parse(myStrgToSolve1))
+	for i in 1:length(myLoop)
+		#if typeof(myLoop[i].value)!=1e-139
+			try eval(Meta.parse(myLoop[i].name*"="*string(myLoop[i].value)))
+			catch
+			end
+		#end
+	end
+	prob = ODEProblem(eqDiffToSolve! ,u₀,tspan,p)
+	condition(u,t,integrator) = t ∈ dosetimes
+	affect!(integrator) = integrator.p[1] = -integrator.p[1]
+	cb = DiscreteCallback(condition,affect!)
+	sol= DifferentialEquations.solve(prob ,Tsit5(),callback=cb,tstops=dosetimes)
+    return sol
+end
+
+
+function PlotSol(sol,myVrArray)
+	myGraph=plot(sol,linewidth=2,xaxis="t",label=permutedims(myVrArray),layout=(4,1))
+	return myGraph
+end
 end
