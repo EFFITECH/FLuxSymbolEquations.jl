@@ -1,7 +1,7 @@
 module FLuxSymbolEquations
 # excitvar à automatiser OK
 # affectation des valeurs pour les composants
-# afectation des variables pour plot
+# affectation des variables pour plot
 # variables d'intégration automatique OK
 # just for test
 export SolveSymbolic,NumericSolve,PlotSol
